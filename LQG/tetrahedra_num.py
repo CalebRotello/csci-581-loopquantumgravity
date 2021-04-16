@@ -1,3 +1,7 @@
+'''
+    Various numerical constants/matrices/vectors to represent quantum tetrahedra
+'''
+
 import numpy as np
 
 Z_zero = [1.,0.]
@@ -14,7 +18,6 @@ def kronlist(states):
 
 # |0> in the tetrahedron basis
 L_zero = 1/2 * np.kron(np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero),np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero))
-#L_zero = L_zero/np.linalg.norm(L_zero)
 
 # |1> in the tetrahedron basis
 L_one = 1/np.sqrt(3) * (
@@ -23,9 +26,3 @@ L_one = 1/np.sqrt(3) * (
         )
 
 TetQubit = lambda theta, phi: np.cos(theta/2)*L_zero + np.sin(theta/2)*np.exp(1j*phi)*L_one
-
-def main():
-    print(np.kron(Z_zero, Z_one))
-
-if __name__ == "__main__":
-    main()
