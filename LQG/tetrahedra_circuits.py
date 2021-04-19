@@ -29,7 +29,7 @@ class UGate(cirq.Gate):
         ])
 
     def _circuit_diagram_info_(self, args):
-        return f"U{self.theta,self.phi}"
+        return f"U({self.theta:.2f},{self.phi:.2f})"
 
 class CVGate(cirq.TwoQubitGate):
     def __init__(self, theta, phi):
@@ -49,18 +49,35 @@ class CVGate(cirq.TwoQubitGate):
         ])
 
     def _circuit_diagram_info_(self, args):
-        return "CV", f"V{self.theta,self.phi}"
+        return "CV", f"V({self.theta:.2f},{self.phi:.2f})"
 
-def TetrahedronStatePrep(qubits, theta, phi):
+def TetStatePrep(qubits, theta, phi):
+    ''' turn 4 qubits into a quantum tetrahedra with a circuit '''
     assert(len(qubits)==4)
     U = UGate(theta,phi)
     CV = CVGate(theta,phi)
-    print(cirq.unitary(U))
-    yield cirq.H(qubits[0])
-    yield U.on(qubits[1])
-    yield CV.on(qubits[1],qubits[2])
-    yield cirq.X(qubits[2])
-    yield cirq.CNOT(qubits[1],qubits[3])
-    yield cirq.CNOT(qubits[0],qubits[1])
-    yield cirq.CNOT(qubits[1],qubits[2])
-    yield cirq.CNOT(qubits[2],qubits[3])
+    yield [cirq.H(qubits[0]),
+     U.on(qubits[1]),
+     CV.on(qubits[1],qubits[2]),
+     cirq.X(qubits[2]),
+     cirq.CNOT(qubits[0],qubits[1]),
+     cirq.CNOT(qubits[2],qubits[3]),
+     cirq.CNOT(qubits[0],qubits[3]),
+     cirq.CNOT(qubits[1],qubits[2]),
+    ]
+
+
+LeftTet = lambda qubits: TetStatePrep(qubits, np.pi/2,np.pi/2)
+RightTet = lambda qubits: TetStatePrep(qubits, np.pi/2,-np.pi/2)
+PlusTet = lambda qubits: TetStatePrep(qubits, np.pi/2,0)
+MinusTet = lambda qubits: TetStatePrep(qubits, -np.pi/2,0)
+ZeroTet = lambda qubits: TetStatePrep(qubits, 0,0)
+OneTet = lambda qubits: TetStatePrep(qubits, np.pi,0)
+
+
+def final_state(circuit):
+    ''' return the final state vector of a circuit '''
+    sim = cirq.Simulator()
+    C = cirq.Circuit(circuit)
+    experiment = sim.simulate(C).final_state_vector
+    return experiment

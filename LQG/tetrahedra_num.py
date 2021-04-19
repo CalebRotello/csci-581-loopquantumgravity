@@ -16,6 +16,10 @@ def kronlist(states):
         state = np.kron(state,s)
     return state
 
+def overlap(s1, s2):
+    ''' take the squared overlap of two vectors '''
+    return np.abs(np.dot(s1,s2))**2
+
 # |0> in the tetrahedron basis
 L_zero = 1/2 * np.kron(np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero),np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero))
 
@@ -25,4 +29,16 @@ L_one = 1/np.sqrt(3) * (
          1/2 * np.kron(np.kron(Z_zero,Z_one) + np.kron(Z_one,Z_zero),np.kron(Z_zero,Z_one) + np.kron(Z_one,Z_zero))
         )
 
-TetQubit = lambda theta, phi: np.cos(theta/2)*L_zero + np.sin(theta/2)*np.exp(1j*phi)*L_one
+# |+> 
+L_plus = (L_zero + L_one)/np.sqrt(2)
+
+# |-> 
+L_minus = (L_zero - L_one)/np.sqrt(2)
+
+# |left> (counter-clockwise), eigenstate of the V operator
+L_left = (L_zero - 1j*L_one)/np.sqrt(2)
+
+# |right> (clockwise), eigenstate of the V operator
+L_right = (L_zero + 1j*L_one)/np.sqrt(2)
+
+TetVec = lambda theta, phi: np.cos(theta/2)*L_zero + np.sin(theta/2)*np.exp(1j*phi)*L_one
