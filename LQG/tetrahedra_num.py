@@ -20,6 +20,13 @@ def overlap(s1, s2):
     ''' take the squared overlap of two vectors '''
     return np.abs(np.dot(s1,s2))**2
 
+
+#''' get the theta, phi from the paired angles '''
+#def entangle()
+#def entangle(s1, s2):
+
+
+
 # |0> in the tetrahedron basis
 L_zero = 1/2 * np.kron(np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero),np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero))
 
@@ -42,3 +49,15 @@ L_left = (L_zero - 1j*L_one)/np.sqrt(2)
 L_right = (L_zero + 1j*L_one)/np.sqrt(2)
 
 TetVec = lambda theta, phi: np.cos(theta/2)*L_zero + np.sin(theta/2)*np.exp(1j*phi)*L_one
+
+# polarizations
+bloch = {
+    'zero':(0,0), 
+    'one':(np.pi,0),
+    'left':(np.pi/2,np.pi/2),
+    'right':(np.pi/2,-np.pi/2),
+    'plus':(np.pi/2,0),
+    'minus':(-np.pi/2,0)
+}
+
+
