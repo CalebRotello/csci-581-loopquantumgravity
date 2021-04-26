@@ -1,3 +1,7 @@
+# protect proprietary information
+*.zip
+Weber*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -7,9 +7,12 @@ import numpy as np
 import pickle
 import os
 
-''' change run-specific data here '''
+''' change run-specific data here 
+    the simulating happens in run_circuit(), ll 369
+'''
+processor = ''
+project_id = '' 
 sim_mode = 'engine'
-project_id = ''
 project_name ='HA_CR_AMPLITUDE_LQG'
 
 
