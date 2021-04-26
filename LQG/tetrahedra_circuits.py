@@ -56,63 +56,81 @@ class CVGate(cirq.TwoQubitGate):
     def _circuit_diagram_info_(self, args):
         return "CV", f"V({self.theta:.2f},{self.phi:.2f})"
 
-def TetStatePrep(qubits, angles):#theta, phi):
+def TetStatePrep(qubits, angles, gateset=True):
     ''' turn 4 qubits into a quantum tetrahedra with a circuit '''
     assert(len(qubits)==4)
     theta = angles[0]
     phi = angles[1]
-    U = UGate(theta,phi)
-    CV = CVGate(theta,phi)
-    yield [
+    U = UGate(theta,phi).on(qubits[1])
+    #if gateset:
+    #    U = to_gateset(U)
+    CV = CVGate(theta,phi).on(qubits[1],qubits[2])
+    #if gateset:
+    #    CV = gateset_CV(CV,qubits[1],qubits[2])
+    circuit =  cirq.Circuit([
      cirq.H(qubits[0]),
-     U.on(qubits[1]),
-     CV.on(qubits[1],qubits[2]),
+     U,
+     CV,
      cirq.X(qubits[2]),
      cirq.CNOT(qubits[0],qubits[1]),
      cirq.CNOT(qubits[2],qubits[3]),
      cirq.CNOT(qubits[1],qubits[2]),
      cirq.CNOT(qubits[0],qubits[3]),
-    ]
+    ])
+
+    if gateset:
+        circuit = to_gateset(circuit)
+        circuit = cirq.google.optimized_for_sycamore(circuit)
+
+    return circuit
 
 
-#def TetStatePrep(qubits, angles):
-#    ''' different parameters to simplify it '''
-#    return TetStatePrep(qubits, angles[0], angles[1])
-
-def HermTet(qubits, angles):
-    assert(len(qubits)==4)
-    theta = angles[0]
-    phi = angles[1]
-    U = UGate(theta,phi)
-    CV = CVGate(theta,phi)
-    yield [
-     cirq.CNOT(qubits[0],qubits[1]),
-     cirq.CNOT(qubits[2],qubits[3]),
-     cirq.CNOT(qubits[1],qubits[2]),
-     #cirq.CNOT(qubits[1],qubits[3]),
-     cirq.CNOT(qubits[0],qubits[3]),
-     cirq.X(qubits[2]),
-     cirq.H(qubits[0])
-    ]
+def to_gateset(U):
+    ''' U circuit converted to the iswap gates
+    '''
+    circuit = cirq.Circuit(U)
+    try:
+        cirq.google.ConvertToSqrtIswapGates().optimize_circuit(circuit)
+    except:
+        cirq.google.ConvertToSycamoreGates().optimize_circuit(circuit)
+        cirq.google.ConvertToSqrtIswapGates().optimize_circuit(circuit)
+    return cirq.google.optimized_for_sycamore(circuit)
+#
+#def gateset_CV(CV, q1, q2):
+#    ''' CV gate needs to be converted to the google used gates
+#    '''
+#    circuit = cirq.Circuit(CV)
+#    oplist = cirq.google.ConvertToSycamoreGates().convert(circuit)
+#    circuit = cirq.Circuit(oplist)
+#    k1 = circuit[1]
+#    k2 = circuit[-1:]
+#    circuit = cirq.Circuit(k1, cirq.CNOT(q1,q2), k2)
+#    cirq.google.ConvertToSqrtIswapGates().optimize_circuit(circuit)
+#    yield circuit
 
 def apply(gate, qubits, pairs):
+    ''' apply one 2-qubit gate to a series of qubits '''
     for p in pairs:
         yield gate(qubits[p[0]],qubits[p[1]])
 
-LeftTet = lambda qubits: TetStatePrep(qubits, tn.bloch['left'])
-RightTet = lambda qubits: TetStatePrep(qubits, tn.bloch['right'])
-PlusTet = lambda qubits: TetStatePrep(qubits, tn.bloch['plus'])
-MinusTet = lambda qubits: TetStatePrep(qubits, tn.bloch['minus'])
-OneTet = lambda qubits: TetStatePrep(qubits, tn.bloch['one'])
 
-def ZeroTet(qubits):
+LeftTet  = lambda qubits, gateset=True: TetStatePrep(qubits, tn.bloch['left'],  gateset=gateset)
+RightTet = lambda qubits, gateset=True: TetStatePrep(qubits, tn.bloch['right'], gateset=gateset)
+PlusTet  = lambda qubits, gateset=True: TetStatePrep(qubits, tn.bloch['plus'],  gateset=gateset)
+MinusTet = lambda qubits, gateset=True: TetStatePrep(qubits, tn.bloch['minus'], gateset=gateset)
+OneTet   = lambda qubits, gateset=True: TetStatePrep(qubits, tn.bloch['one'],   gateset=gateset)
+
+def ZeroTet(qubits, gateset=True):
     assert(len(qubits)==4)
-    yield [
+    circuit = cirq.Circuit(
      cirq.X.on_each(qubits),
      cirq.H.on_each(qubits[::2]),
      cirq.CNOT(qubits[0],qubits[1]),
-     cirq.CNOT(qubits[2],qubits[3])
-    ]
+     cirq.CNOT(qubits[2],qubits[3]),
+    )
+    if gateset:
+        circuit = to_gateset(circuit)
+    yield circuit
 
 
 def final_state(circuit,ket=False):
@@ -126,26 +144,48 @@ def final_state(circuit,ket=False):
     return experiment
 
 
-def entangle_tets(qubits, pairs):
+def entangle_tets(qubits, pairs, exp=1):
     ''' given a list of pairs (source->sink) 
     '''
     paired = set() # make sure we don't double-pair
+    cnot = cirq.CNotPowGate(exponent=exp)
     for p in pairs:
         for itm in p:
             assert(itm not in paired)
             paired.add(itm)
-        yield cirq.CNOT(qubits[p[0]],qubits[p[1]])
+        yield cnot.on(qubits[p[0]],qubits[p[1]])
         yield cirq.H(qubits[p[0]])
         yield cirq.X.on_each((qubits[p[0]],qubits[p[1]]))
 
-def hist_to_wavefn(hist,N,samples):
-    ''' transform a histogram into the wavefunction
+#def hist_to_wavefn(hist,N,samples):
+#    ''' transform a histogram into the wavefunction
+#    '''
+#    wavefn = np.zeros(2**N)
+#    for key,item in hist.items():
+#        wavefn[key] = item/samples
+#    return wavefn
+
+
+def noisify(circuit,x):
+    ''' take a circuit and add depolarizing noise
     '''
-    wavefn = np.zeros(2**N)
+    noise = cirq.ConstantQubitNoiseModel(cirq.depolarize(x))
+    noisy_circuit = cirq.Circuit()
+    sysqubits = sorted(circuit.all_qubits())
+    for moment in circuit:
+        noisy_circuit.append(noise.noisy_moment(moment, sysqubits))
+    return noisy_circuit
+
+
+def post_select_even(hist,N):
+    ''' post select data from a histogram knowing the states should have an even 
+        number of 1's 
+    '''
+    newhist = {}
+    newsamples = 0
     for key,item in hist.items():
-        wavefn[key] = item/samples
-    return wavefn
-
-#def to_iswap_gateset(circuit):
-
-
+        s = binformat(N).format(key)
+        if s.count('1') % 2 == 0:
+            newhist[key] = item
+            newsamples += item
+    return newhist, newsamples

@@ -3,6 +3,8 @@ import LQG.tetrahedra_circuits as tc
 import cirq
 import numpy as np
 
+digs = 5
+
 def test_init_vec(theta,phi):
     Q = cirq.LineQubit.range(4)
     C = cirq.Circuit(tc.TetStatePrep(Q,(theta,phi)))
@@ -11,7 +13,7 @@ def test_init_vec(theta,phi):
     overlap = tn.overlap(tn.TetVec(theta,phi),experiment)
     print(f'{overlap:.4f}',end=', ')
     try:
-        assert(round(overlap,ndigits=6)==1.)
+        assert(round(overlap,ndigits=digs)==1.)
         print('passed!')
     except:
         print('failed! :(')
@@ -21,11 +23,11 @@ def test_polarizations():
     try:
         assert(tn.overlap(tn.L_zero, np.real(tn.TetVec(0,0)))==1.)
         a = tn.bloch['one']
-        assert(round(tn.overlap(tn.L_one, tn.TetVec(a[0],a[1])),ndigits=6)==1.)
-        assert(round(tn.overlap(tn.L_plus, tn.TetVec(np.pi/2,0)),ndigits=6)==1.)
-        assert(round(tn.overlap(tn.L_minus, tn.TetVec(-np.pi/2,0)),ndigits=6)==1.)
-        assert(round(tn.overlap(tn.L_left, tn.TetVec(np.pi/2,np.pi/2)),ndigits=6)==1.)
-        assert(round(tn.overlap(tn.L_right, tn.TetVec(np.pi/2,-np.pi/2)),ndigits=6)==1.)
+        assert(round(tn.overlap(tn.L_one, tn.TetVec(a[0],a[1])),ndigits=digs)==1.)
+        assert(round(tn.overlap(tn.L_plus, tn.TetVec(np.pi/2,0)),ndigits=digs)==1.)
+        assert(round(tn.overlap(tn.L_minus, tn.TetVec(-np.pi/2,0)),ndigits=digs)==1.)
+        assert(round(tn.overlap(tn.L_left, tn.TetVec(np.pi/2,np.pi/2)),ndigits=digs)==1.)
+        assert(round(tn.overlap(tn.L_right, tn.TetVec(np.pi/2,-np.pi/2)),ndigits=digs)==1.)
         print('passed!')
     except:
         0
@@ -33,10 +35,10 @@ def test_polarizations():
 def test_circuit_polarizations():
     # test the constant-defined state circuits
     qubits = cirq.LineQubit.range(4)
-    assert(round(tn.overlap(tn.L_zero,  tc.final_state(tc.ZeroTet(qubits))),ndigits=6)==1.)
-    assert(round(tn.overlap(tn.L_one,   tc.final_state(tc.OneTet(qubits))),ndigits=6)==1.)
-    assert(round(tn.overlap(tn.L_plus,  tc.final_state(tc.PlusTet(qubits))),ndigits=6)==1.)
-    assert(round(tn.overlap(tn.L_minus, tc.final_state(tc.MinusTet(qubits))),ndigits=6)==1.)
-    assert(round(tn.overlap(tn.L_left,  tc.final_state(tc.LeftTet(qubits))),ndigits=6)==1.)
-    assert(round(tn.overlap(tn.L_right, tc.final_state(tc.RightTet(qubits))),ndigits=6)==1.)
+    assert(round(tn.overlap(tn.L_zero,  tc.final_state(tc.ZeroTet(qubits))),ndigits=digs)==1.)
+    assert(round(tn.overlap(tn.L_one,   tc.final_state(tc.OneTet(qubits))),ndigits=digs)==1.)
+    assert(round(tn.overlap(tn.L_plus,  tc.final_state(tc.PlusTet(qubits))),ndigits=digs)==1.)
+    assert(round(tn.overlap(tn.L_minus, tc.final_state(tc.MinusTet(qubits))),ndigits=digs)==1.)
+    assert(round(tn.overlap(tn.L_left,  tc.final_state(tc.LeftTet(qubits))),ndigits=digs)==1.)
+    assert(round(tn.overlap(tn.L_right, tc.final_state(tc.RightTet(qubits))),ndigits=digs)==1.)
     print('passed!')

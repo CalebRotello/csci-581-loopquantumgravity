@@ -20,13 +20,6 @@ def overlap(s1, s2):
     ''' take the squared overlap of two vectors '''
     return np.abs(np.dot(s1,s2))**2
 
-
-#''' get the theta, phi from the paired angles '''
-#def entangle()
-#def entangle(s1, s2):
-
-
-
 # |0> in the tetrahedron basis
 L_zero = 1/2 * np.kron(np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero),np.kron(Z_zero,Z_one) - np.kron(Z_one,Z_zero))
 
@@ -59,5 +52,7 @@ bloch = {
     'plus':(np.pi/2,0),
     'minus':(-np.pi/2,0)
 }
+
+
 
 
