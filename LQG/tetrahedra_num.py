@@ -58,9 +58,3 @@ T_zero[0] = 1
 
 TetVec = lambda theta, phi: np.cos(theta/2)*L_zero + np.sin(theta/2)*np.exp(1j*phi)*L_one
 
-a = link_faces(0,3,4)+link_faces(1,2,4)
-a = np.kron(link_faces(0,1,2),link_faces(0,1,2))
-print(a)
-print(L_zero)
-print(np.transpose(a)*L_zero*T_zero)
-print(overlap(a,L_zero))

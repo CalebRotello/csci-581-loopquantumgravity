@@ -13,7 +13,7 @@ import os
 processor = ''
 project_id = '' 
 sim_mode = 'engine'
-project_name ='HA_CR_AMPLITUDE_LQG'
+project_name = 'HA_CR_AMPLITUDE_LQG'
 
 
 

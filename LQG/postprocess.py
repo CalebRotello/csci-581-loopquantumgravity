@@ -1,5 +1,5 @@
 import numpy as np
-from LQG import tetrahedra_circuits as tc 
+import tetrahedra_circuits as tc 
 
 
 
@@ -16,4 +16,4 @@ def post_select_even(hist,N):
             newsamples += item
     return newhist, newsamples
 
-
+#def load_data(fname):

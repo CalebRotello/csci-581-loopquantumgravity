@@ -5,6 +5,8 @@ import cirq
 import numpy as np
 import tetrahedra_num as tn
 
+project_name ='HA_CR_AMPLITUDE_LQG'
+
 binformat = lambda qubits: '{0:0' + str(qubits) + 'b}'
 
 # A|1010> + A|0101> c2
