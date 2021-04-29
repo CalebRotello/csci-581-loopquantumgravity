@@ -18,9 +18,13 @@ def kronlist(states):
         state = np.kron(state,s)
     return state
 
-def overlap(s1, s2):
+def sqoverlap(s1, s2):
     ''' take the squared overlap of two vectors '''
     return np.abs(np.dot(s1,s2))**2
+
+def overlap(s1, s2):
+    ''' overlap of two vectors '''
+    return np.dot(s1,s2)
 
 def link_faces(f1, f2, dim):
     ''' entangle two tetrahedra faces with a Bell state 1/sqrt(2) |0_i 1_j> + |1_i 0_j>

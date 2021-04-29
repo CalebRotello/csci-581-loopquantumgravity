@@ -151,19 +151,24 @@ def final_state(circuit,ket=False):
         experiment = sim.simulate(C)
     return experiment
 
+def final_state_simulation(circuit,runs):
+    results = cirq.Simulator().run(cirq.Circuit(circuit),repetitions=runs)    
+    return results
 
-def entangle_tets(pairs, exp=1, gateset=True):
+
+def entangle_tets(pairs, gateset=True):
     ''' given a list of pairs (source->sink) 
     '''
     paired = set() # make sure we don't double-pair
-    cnot = cirq.CNotPowGate(exponent=exp)
+    #cnot = cirq.CNotPowGate(exponent=exp)
     circuit = cirq.Circuit()
     for p in pairs:
         for itm in p:
             assert(itm not in paired)
             paired.add(itm)
         circuit.append([
-            cnot.on(p[0],p[1]),
+            #cnot.on(p[0],p[1]),
+            cirq.CNOT(p[0],p[1]),
             cirq.H(p[0]),
             cirq.X.on_each(p[0],p[1]),
         ])
@@ -194,3 +199,6 @@ def parallel_init(tets):
         circuit.append(cirq.Moment(m))
     return circuit
     
+def filter_circuit(circuit: cirq.Circuit):
+    ''' take a circuit and remove every two qubit gate which acts on a given bridge '''
+    print(circuit.moments)

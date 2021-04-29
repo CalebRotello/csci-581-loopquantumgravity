@@ -2,6 +2,18 @@
 *.zip
 Weber*
 
+# latex extras
+*.ps
+*.log
+*.aux
+*.out
+*.dvi
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.xml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

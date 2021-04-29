@@ -1,5 +1,8 @@
 ''' Spin-foam amplitudes of loop quantum gravity
     project by Hakan Ayaz and Caleb Rotello
+
+    this script is trying to proove that there was a problem in the operation of
+    two qubit gate 4,7-4,8
 '''
 import cirq
 import json
@@ -198,6 +201,18 @@ def parallel_init(tets):
         circuit.append(cirq.Moment(m))
     return circuit
 
+def filter(circuit: cirq.Circuit):
+    newcir = cirq.Circuit()
+    q = cirq.GridQubit(4,8)
+    for mom in circuit.moments:
+        m = []
+        for o in mom.operations:
+            if o == cirq.CNOT(q,cirq.GridQubit(5,8)) or o == cirq.CNOT(q,cirq.GridQubit(4,9)):
+                m.append(cirq.reset(o.qubits[1])),
+            else:
+                m.append(o)
+        newcir.append(m)
+    return newcir
 
 ''' submission '''
 qb = lambda a,b: cirq.GridQubit(a,b)
@@ -236,14 +251,16 @@ def main():
     # 12_000
 
     # dipole 
-    zerotwo_state = lambda qubs: parallel_init([cirq.Circuit(ZeroTet(qubs[i*4:i*4+4]) for i in range(2))])
+    zerotwo_state = lambda qubs: parallel_init([cirq.Circuit(ZeroTet(qubs[i*4:i*4+4],False) for i in range(2))])
     onetwo_state = lambda qubs: parallel_init([cirq.Circuit(OneTet(qubs[i*4:i*4+4]) for i in range(2))])
     # |00> 04152637
     qubs = [qb(3,6),qb(3,5),qb(4,7),qb(4,8),
             qb(4,6),qb(4,5),qb(5,7),qb(5,8)]
     pairs = [(qubs[0],qubs[4]),(qubs[1],qubs[5]),(qubs[2],qubs[6]),(qubs[3],qubs[7])]
     # 100_000
-    zerotwo_transition = cirq.Circuit(zerotwo_state(qubs),entangle_tets(pairs),device=SYC)
+    zerotwo_transition = cirq.Circuit(zerotwo_state(qubs),entangle_tets(pairs,gateset=False))#,device=SYC)
+    zerotwo_transition = filter(zerotwo_transition)
+    print(zerotwo_transition)
     for i in range(10):
         result = run_circuit(zerotwo_transition + measurement_circuit(qubs), 10_000)
         results_dict['zero_two_transition_04152637_{}'.format(i)] = result.histogram(key='z')
@@ -252,13 +269,14 @@ def main():
     qubs = [qb(4,7),qb(4,6),qb(3,6),qb(3,7),
             qb(4,9),qb(4,8),qb(3,8),qb(3,9)]
     # 100_000
-    onetwo_transition = cirq.Circuit(onetwo_state(qubs),device=SYC)
+    onetwo_transition = cirq.Circuit(onetwo_state(qubs))
     append_circuit = cirq.Circuit(
         cirq.Moment([cirq.SWAP(qubs[5],qubs[0]),cirq.SWAP(qubs[3],qubs[6])]),
         entangle_tets([(qubs[3],qubs[2]),(qubs[1],qubs[0]),(qubs[6],qubs[7]),(qubs[5],qubs[4])])
     )
-    to_iswap.optimize_circuit(append_circuit)
+    #to_iswap.optimize_circuit(append_circuit)
     onetwo_transition.append(append_circuit)
+    onetwo_transition = filter(onetwo_transition)
     for i in range(10):
         result = run_circuit(onetwo_transition + measurement_circuit(qubs), 10_000)
         results_dict['one_two_transition_04152637_{}'.format(i)] = result.histogram(key='z')
@@ -269,7 +287,7 @@ def main():
             qb(4,5),qb(5,5),qb(4,7),qb(4,6)] 
     pairs = [(qubs[0],qubs[4]),(qubs[1],qubs[7]),(qubs[2],qubs[5]),(qubs[3],qubs[6])]
     # 100_000
-    zerotwo_transition = cirq.Circuit(zerotwo_state(qubs),entangle_tets(pairs),device=SYC)
+    zerotwo_transition = cirq.Circuit(zerotwo_state(qubs),entangle_tets(pairs,gateset=False))#,device=SYC)
     for i in range(10):
         result = run_circuit(zerotwo_transition + measurement_circuit(qubs), 10_000)
         results_dict['zero_two_transition_04172536_{}'.format(i)] = result.histogram(key='z')
@@ -278,14 +296,15 @@ def main():
     qubs = [qb(4,7),qb(4,6),qb(3,6),qb(3,7),
             qb(4,9),qb(4,8),qb(3,8),qb(3,9)]
     # 100_000
-    onetwo_transition = cirq.Circuit(onetwo_state(qubs),device=SYC)
+    onetwo_transition = cirq.Circuit(onetwo_state(qubs))#,device=SYC)
     append_circuit = cirq.Circuit([
         cirq.SWAP(qubs[0],qubs[3]),
         cirq.Moment(cirq.SWAP(qubs[3],qubs[6]),cirq.SWAP(qubs[0],qubs[5])),
         entangle_tets([(qubs[2],qubs[3]),(qubs[1],qubs[0]),(qubs[6],qubs[7]),(qubs[5],qubs[4])])
     ])
-    to_iswap.optimize_circuit(append_circuit)
+    #to_iswap.optimize_circuit(append_circuit)
     onetwo_transition.append(append_circuit)
+    onetwo_transition = filter(onetwo_transition)
     # 0 -> 2, 3 -> 1, 2 -> 3, 1 -> 0, 4 <-> 5, 7 <-> 6
     for i in range(10):
         result = run_circuit(onetwo_transition + measurement_circuit(qubs), 10_000)
@@ -294,66 +313,66 @@ def main():
     # 412_000
 
     # 4-simplex 
-    qubs = [qb(3,7),qb(4,7),qb(2,4),qb(1,4),
-            qb(1,5),qb(1,6),qb(3,5),qb(3,6),
-            qb(2,6),qb(2,5),qb(4,4),qb(4,3),
-            qb(3,3),qb(3,4),qb(4,6),qb(5,6),
-            qb(5,5),qb(5,4),qb(1,7),qb(2,7)]
-    pairs = [(qubs[19],qubs[0]),(qubs[18],qubs[5]),(qubs[14],qubs[1]),(qubs[6],qubs[13]),
-            (qubs[2],qubs[9]),(qubs[10],qubs[17]),(qubs[3],qubs[4]),(qubs[7],qubs[8]),
-            (qubs[11],qubs[12]),(qubs[15],qubs[16])]
+    #qubs = [qb(3,7),qb(4,7),qb(2,4),qb(1,4),
+    #        qb(1,5),qb(1,6),qb(3,5),qb(3,6),
+    #        qb(2,6),qb(2,5),qb(4,4),qb(4,3),
+    #        qb(3,3),qb(3,4),qb(4,6),qb(5,6),
+    #        qb(5,5),qb(5,4),qb(1,7),qb(2,7)]
+    #pairs = [(qubs[19],qubs[0]),(qubs[18],qubs[5]),(qubs[14],qubs[1]),(qubs[6],qubs[13]),
+    #        (qubs[2],qubs[9]),(qubs[10],qubs[17]),(qubs[3],qubs[4]),(qubs[7],qubs[8]),
+    #        (qubs[11],qubs[12]),(qubs[15],qubs[16])]
+    ### 1_500_000
+    #zerofive_state = lambda qubs: parallel_init([cirq.Circuit(ZeroTet(qubs[i*4:i*4+4])) for i in range(5)])
+    #zerofive_transition = cirq.Circuit(zerofive_state(qubs),entangle_tets(pairs),device=SYC)
+    #for i in range(15):
+    #    result = run_circuit(zerofive_transition + measurement_circuit(qubs), 100_000)
+    #    results_dict['zero_five_transition_{}'.format(i)] = result.histogram(key='z')
+
+    ## 1_912_000
+
+    ## maybe worth tying gluing two simplices?
+    #qubs = [qb(3,5),qb(4,5),qb(0,6),qb(0,5),
+    #        qb(1,5),qb(1,4),qb(2,8),qb(2,7),
+    #        qb(1,7),qb(1,6),qb(4,8),qb(4,9),
+    #        qb(3,9),qb(3,8),qb(4,6),qb(3,6),
+    #        qb(3,7),qb(4,7),qb(2,4),qb(3,4),
+    #        
+    #        qb(5,4),qb(4,4),qb(7,6),qb(6,6),
+    #        qb(6,7),qb(5,7),qb(8,3),qb(8,4),
+    #        qb(8,5),qb(7,5),qb(5,2),qb(6,2),
+    #        qb(6,3),qb(7,3),qb(4,3),qb(3,3),
+    #        qb(3,2),qb(4,2),qb(5,6),qb(5,5)]
+    #pairs = [(qubs[19],qubs[0]),(qubs[18],qubs[5]),
+    #         (qubs[14],qubs[1]),(qubs[6],qubs[13]),
+    #         (qubs[2],qubs[9]),(qubs[10],qubs[17]),
+    #         (qubs[3],qubs[4]),(qubs[7],qubs[8]),
+    #         (qubs[11],qubs[12]),(qubs[15],qubs[16]),
+
+    #         (qubs[39],qubs[20]),(qubs[38],qubs[25]),
+    #         (qubs[34],qubs[21]),(qubs[26],qubs[33]),
+    #         (qubs[22],qubs[29]),(qubs[30],qubs[37]),
+    #         (qubs[23],qubs[24]),(qubs[27],qubs[28]),
+    #         (qubs[31],qubs[32]),(qubs[35],qubs[36]),
+    #         ]
+
     ## 1_500_000
-    zerofive_state = lambda qubs: parallel_init([cirq.Circuit(ZeroTet(qubs[i*4:i*4+4])) for i in range(5)])
-    zerofive_transition = cirq.Circuit(zerofive_state(qubs),entangle_tets(pairs),device=SYC)
-    for i in range(15):
-        result = run_circuit(zerofive_transition + measurement_circuit(qubs), 100_000)
-        results_dict['zero_five_transition_{}'.format(i)] = result.histogram(key='z')
-
-    # 1_912_000
-
-    # maybe worth tying gluing two simplices?
-    qubs = [qb(3,5),qb(4,5),qb(0,6),qb(0,5),
-            qb(1,5),qb(1,4),qb(2,8),qb(2,7),
-            qb(1,7),qb(1,6),qb(4,8),qb(4,9),
-            qb(3,9),qb(3,8),qb(4,6),qb(3,6),
-            qb(3,7),qb(4,7),qb(2,4),qb(3,4),
-            
-            qb(5,4),qb(4,4),qb(7,6),qb(6,6),
-            qb(6,7),qb(5,7),qb(8,3),qb(8,4),
-            qb(8,5),qb(7,5),qb(5,2),qb(6,2),
-            qb(6,3),qb(7,3),qb(4,3),qb(3,3),
-            qb(3,2),qb(4,2),qb(5,6),qb(5,5)]
-    pairs = [(qubs[19],qubs[0]),(qubs[18],qubs[5]),
-             (qubs[14],qubs[1]),(qubs[6],qubs[13]),
-             (qubs[2],qubs[9]),(qubs[10],qubs[17]),
-             (qubs[3],qubs[4]),(qubs[7],qubs[8]),
-             (qubs[11],qubs[12]),(qubs[15],qubs[16]),
-
-             (qubs[39],qubs[20]),(qubs[38],qubs[25]),
-             (qubs[34],qubs[21]),(qubs[26],qubs[33]),
-             (qubs[22],qubs[29]),(qubs[30],qubs[37]),
-             (qubs[23],qubs[24]),(qubs[27],qubs[28]),
-             (qubs[31],qubs[32]),(qubs[35],qubs[36]),
-             ]
-
-    # 1_500_000
-    zeroten_state = lambda qubs: parallel_init([cirq.Circuit(ZeroTet(qubs[i*4:i*4+4])) for i in range(10)])
-    zeroten_transition = cirq.Circuit(zeroten_state(qubs),entangle_tets(pairs),device=SYC)
-    # entangle 38,17, 39,16, 37,19, 36,18 07 16 24 35
-    append_circuit = cirq.Circuit(
-        cirq.Moment([cirq.SWAP(qubs[36],qubs[35]),cirq.SWAP(qubs[37],qubs[34]),cirq.SWAP(qubs[19],qubs[21]),
-                     cirq.SWAP(qubs[16],qubs[15]),cirq.SWAP(qubs[38],qubs[25])]), 
-                     # 36 <-> 35, 37 <-> 34, 19 <-> 21, 16 <-> 15, 38 <-> 25
-        cirq.Moment([cirq.SWAP(qubs[15],qubs[14]),cirq.SWAP(qubs[39],qubs[38]),cirq.SWAP(qubs[18],qubs[19])]),
-                     # 15 <-> 14, 39 <-> 38, 18 <-> 19
-        apply(inv_epr_state, 
-                          [(qubs[35],qubs[19]),(qubs[34],qubs[21]),(qubs[17],qubs[25]),(qubs[14],qubs[38])])
-    )
-    to_iswap.optimize_circuit(append_circuit)
-    zeroten_transition.append(append_circuit)
-    for i in range(15):
-        result = run_circuit(zeroten_transition + measurement_circuit(qubs), 100_000)
-        results_dict['zero_ten_transition_{}'.format(i)] = result.histogram(key='z')
+    #zeroten_state = lambda qubs: parallel_init([cirq.Circuit(ZeroTet(qubs[i*4:i*4+4])) for i in range(10)])
+    #zeroten_transition = cirq.Circuit(zeroten_state(qubs),entangle_tets(pairs),device=SYC)
+    ## entangle 38,17, 39,16, 37,19, 36,18 07 16 24 35
+    #append_circuit = cirq.Circuit(
+    #    cirq.Moment([cirq.SWAP(qubs[36],qubs[35]),cirq.SWAP(qubs[37],qubs[34]),cirq.SWAP(qubs[19],qubs[21]),
+    #                 cirq.SWAP(qubs[16],qubs[15]),cirq.SWAP(qubs[38],qubs[25])]), 
+    #                 # 36 <-> 35, 37 <-> 34, 19 <-> 21, 16 <-> 15, 38 <-> 25
+    #    cirq.Moment([cirq.SWAP(qubs[15],qubs[14]),cirq.SWAP(qubs[39],qubs[38]),cirq.SWAP(qubs[18],qubs[19])]),
+    #                 # 15 <-> 14, 39 <-> 38, 18 <-> 19
+    #    apply(inv_epr_state, 
+    #                      [(qubs[35],qubs[19]),(qubs[34],qubs[21]),(qubs[17],qubs[25]),(qubs[14],qubs[38])])
+    #)
+    #to_iswap.optimize_circuit(append_circuit)
+    #zeroten_transition.append(append_circuit)
+    #for i in range(15):
+    #    result = run_circuit(zeroten_transition + measurement_circuit(qubs), 100_000)
+    #    results_dict['zero_ten_transition_{}'.format(i)] = result.histogram(key='z')
 
     # 3_412_000
 
@@ -363,7 +382,7 @@ def main():
     dir_path = os.path.join(root_dir, top_dir)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-    with open(dir_path + '/lqg_ha_cr_test_measurements.json','w') as f:
+    with open(dir_path + '/lqg_ha_cr_error.json','w') as f:
         json.dump(results_dict,f)
         
 
