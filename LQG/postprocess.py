@@ -37,7 +37,10 @@ class Sample():
             bstr = tc.binformat(self.nqubs).format(key)
             s = []
             for i,st in enumerate(start):
-                s.append(bstr[st:end[i]])
+                if i == None:
+                    s.append(bstr[st:])
+                else:
+                    s.append(bstr[st:end[i]])
             try:
                 states[''.join(s)] += value
             except:
@@ -53,7 +56,7 @@ class Sample():
         '''
         newhist = {}
         for key,item in self.hist.items():
-            if keepfn(key):
+            if keepfn(key,self.nqubs):
                 newhist[key] = item
         self.__init__(newhist,self.nqubs)
 
@@ -214,3 +217,10 @@ def keepfn_even(stateint,nqubs=4):
     if tc.binformat(nqubs).format(stateint).count('1') % 2 == 0:
         return True
     return False
+
+def keepfn_paired(stateint,nqubs=4):
+    state = tc.binformat(nqubs).format(stateint)
+    for i in np.arange(0,nqubs,2):
+        if state[i] != state[i+1]:
+            return False
+    return True

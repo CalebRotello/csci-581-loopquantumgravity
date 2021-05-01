@@ -124,7 +124,7 @@ LeftTet  = lambda qubits, gateset=True, chain=False: TetStatePrep(qubits, bloch[
 RightTet = lambda qubits, gateset=True, chain=False: TetStatePrep(qubits, bloch['right'], gateset=gateset,chain=chain)
 PlusTet  = lambda qubits, gateset=True, chain=False: TetStatePrep(qubits, bloch['plus'],  gateset=gateset,chain=chain)
 MinusTet = lambda qubits, gateset=True, chain=False: TetStatePrep(qubits, bloch['minus'], gateset=gateset,chain=chain)
-OneTet   = lambda qubits, gateset=True, chain=False: TetStatePrep(qubits, bloch['one'],      gateset=gateset,chain=chain)
+OneTet   = lambda qubits, gateset=True, chain=False: TetStatePrep(qubits, bloch['one'],   gateset=gateset,chain=chain)
 
 def ZeroTet(qubits, gateset=True):
     assert(len(qubits)==4)
@@ -170,7 +170,8 @@ def entangle_tets(pairs, gateset=True):
             #cnot.on(p[0],p[1]),
             cirq.CNOT(p[0],p[1]),
             cirq.H(p[0]),
-            cirq.X.on_each(p[0],p[1]),
+            #cirq.X.on_each(p[0],p[1]),
+            cirq.X(p[1])
         ])
     if gateset:
         circuit = to_gateset(circuit)
@@ -190,15 +191,12 @@ def noisify(circuit,x):
 def measurement_circuit(qubits):
     return cirq.Circuit(cirq.measure(*qubits, key='z')) 
 
-def parallel_init(tets):
+def parallelize(circuits):
     circuit = cirq.Circuit()
-    for i,_ in enumerate(tets[0]):
+    for i,_ in enumerate(circuits[0]):
         m = []
-        for t in tets:
+        for t in circuits:
             m.append(t[i])
         circuit.append(cirq.Moment(m))
     return circuit
     
-def filter_circuit(circuit: cirq.Circuit):
-    ''' take a circuit and remove every two qubit gate which acts on a given bridge '''
-    print(circuit.moments)
