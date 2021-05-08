@@ -1,6 +1,7 @@
 # protect proprietary information
 *.zip
 Weber*
+*.json
 
 # latex extras
 *.ps
