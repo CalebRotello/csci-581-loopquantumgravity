@@ -1,41 +1,166 @@
-\documentclass[12pt]{article}
-\usepackage[utf8]{inputenc}
+\documentclass[a4paper,11pt,aps,tightenlines,nofootinbib]{revtex4}
+\usepackage{xspace}
 \usepackage[english]{babel}
-
-\usepackage{geometry}
-\geometry{margin=1in}
-
-\usepackage[square,numbers]{natbib}
-\usepackage{graphicx}
-\usepackage{physics}
-\usepackage{color}
-\usepackage{float}
+\usepackage{amsfonts}
+\usepackage{amsmath, amsthm, amssymb, mathrsfs}
+\usepackage[dvips]{graphicx}
+\usepackage{pdfpages}
+\usepackage{setspace}
 \usepackage{indentfirst}
-\bibliographystyle{unsrt}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{bbm}
 
-\setlength\parindent{30pt}
-\graphicspath{./resources/}
+\usepackage{pstricks}
+\usepackage{enumerate}
+\usepackage{pstricks-add}
+\usepackage{epsfig}
+\usepackage{pst-grad}
+\usepackage{pst-plot}
+\usepackage{physics}
 
-\newcommand{\todo}[1]{
-        \textcolor{red}{{TODO #1}}
-}
-\newcommand{\note}[1]{
-        \textcolor{blue}{{NOTE #1}}
-}
-
-\font\titlefont=cmr12 at 16pt
-\font\namefont=cmr12 at 13pt
+\newcommand{\pun}[1]{\textcolor{red}{\bf #1}}
 
 \begin{document}
 
-\title{\titlefont\vspace{-10ex}Spin-foam Amplitudes of 3 and 4 simplices for loop quantum gravity\vspace{-2ex}}
-\author{\vspace{-10ex} Caleb Rotello, Hakan Ayaz}
+
+%\title{Quantum simulations of topologically non-homeomorphic spacetime atoms in loop quantum gravity}
+\title{Quantum simulation of a space-time atom in loop quantum gravity}
+\author{Caleb Rotello}
+\author{Hakan Ayaz}
+
+\begin{abstract}
+\end{abstract}
+
+
 \maketitle
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+%\cite{ibm-qsim-qubit-of-space}
+%An overview of quantum computing and accessed hardware. Introduce large number of states 
+%and simulation for transitions. What loop quantum gravity is. What hardware we had access 
+%to.
 
-\section{Introduction}\label{intro}
+%Quantum computing gives an exponential speedup to problems and a dramatic increase in spatial efficiency.
+%Because of the storage capabilities of the Bloch sphere, a quantum computer with 40 qubits can easily 
+%manipulate a system which has $2^{40}$ states.
+With quantum computers becoming more useful in recent years, many problems with large solution spaces or problem states 
+are being tested.
 
-\bibliography{final-paper}{}
-\end{document}
+Loop Quantum Gravity (LQG), is a theory based on the quantization of space-time, where entangled quantum tetrahedra give rise to 
+space-time in a way the unifies quantum mechanics and general relativity. 
+
+
+
+
+\section{Loop Quantum Gravity}
+%Stronger introduction to loop quantum gravity
+
+\subsection{Quantum Tetrahedra}
+        In any $n$-dimensional space, an $n$-simplex is the shape with the fewest possible number of faces; a 
+        2-simplex is a triangle, a 3-simplex is a tetrahedron, and so on to higher dimensions. One central tenet 
+        of LQG is quantized space-time \textbf{CITATION - WHY tetrahedra?}. Therefore, to get discrete space in 3 dimensions
+        we will choose the 3-simplex, or tetrahedron, to be our discrete unit of space. One tetrahedron is defined by the 
+        equation 
+        \begin{equation} 
+                \vec J_1 + \vec J_2 + \vec J_3 + \vec J_4 = 0
+        \end{equation}
+        where $\vec J_i = (J_x,J_y,J_z)$ is the angular momentum vector of the $i$th face \cite{covariant-lqg}. We can then define 
+        a quantum tetrahedron, or qubit of space, with the following \cite{qspacetime-on-qsim}, where $\theta$ and $\phi$ are 
+        angles on the Bloch sphere 
+        \begin{align}
+                \ket{t} &= \cos(\frac{\theta}{2})\ket{0_L} + e^{i\phi}\sin(\frac{\theta}{2}) \ket{1_L}\\
+                \ket{0_L} &= \frac{1}{2}(\ket{01}-\ket{10})(\ket{01}-\ket{10})\\
+                \ket{1_L} &= \frac{1}{\sqrt{3}}[\ket{1100}+\ket{0011}-\frac{1}{2}(\ket{01}+\ket{10})(\ket{01}+\ket{10})]
+        \end{align}
+        This quantum tetrahedron is the discrete unit of 3 dimensional quantum space.
+
+\subsection{Space-time Atom}
+        The 4-simplex is a geometric object used to create discrete 3+1 dimensional space-time \cite{simplical-decomp}, so in order to 
+        properly simulate LQG spinfoam amplitudes we need to create a 4-simplex with our quantum tetrahedra.
+        An $n$-simplex is created by gluing $n+1$ simplices from the $n-1$ dimension; a 2 dimension triangle is created by ``gluing'' 3 lines 
+        together. To create the 4-simplex, we will glue 5 quantum tetrahedra together with entanglement between faces. 
+
+A collection of connected quantum tetrahedra gives rise to a spin-network graph, where each node in the graph is a tetrahedron and links are formed by gluing adjacent faces \cite{gluing-polyhedra}. 
+
+\subsection{Gaussian Constraint}
+%Explore the equation $0=P_G\ket{\psi}$, its solution, how we can make it unitary
+
+\subsection{Transition Amplitudes}
+%The theoretical process at work behind transition amplitude simulation.
+
+
+
+\section{Quantum Simulation}
+%What kind of quantum simulation we did.
+We performed quantum simulations in order to obtain the aforementioned vertex amplitudes. Simulations 
+were intended to solve the equation 
+\begin{equation}
+        A(B,S) = \bra{B}P_G\ket{S}
+\end{equation}
+where $P_G$ is the Gaussian constraint. There is no guarantee that $P_G$ is unitary, so in order 
+to simulate the vertex amplitude, we must further constrain it to the projection operator $P_G = \ket{T}\bra{T}$.
+
+\subsection{Circuit}
+Template for how circuits are formed. Function of $\ket{0_L}$ state.
+\subsection{Topology}
+Emergent non-homeomorphisms among the spin network.
+
+\section{Dipole Spin Network}
+
+\section{4-Simplex Spin Network}
+
+\section{Results and Discussion}
+
+\vspace{0cm}
+\bibliographystyle{plainnat}
+\begin{thebibliography}{99}
+
+\bibitem{ibm-qsim-qubit-of-space}
+        G. Czelusta, J. Mielczarek,
+        ``Quantum simulations of a qubit of space'',
+        Phys. Rev. {\bf D103}, 046001 (2021)
+        [arXiv:2003.13124].
+
+\bibitem{covariant-lqg}        
+        C. Rovelli, F. Vidotto,
+        ``Covariant Loop Quantum Gravity: An elementary introduction to Quantum Gravity and Spinfoam Theory'',
+        Cambridge Monographs on Mathematical Physics, 2014.
+
+\bibitem{qspacetime-on-qsim}        
+        K. Li, Y. Li, M. Han, et. al.,
+        ``Quantum spacetime on a quantum simulator'',
+        Communications Physics {\bf 2}, 122 (2019)
+
+\bibitem{simplical-decomp}        
+        S. Lawphongpanich, n.d., 
+        Simplicial decompositionSimplicial Decomposition, 
+        \emph{Encyclopedia of Optimization}, Boston, MA, Springer US, pp. 2375-2378
+
+\bibitem{gluing-polyhedra}        
+        B. Bayatas, E. Bianchi, N. Yokomizo,
+        ``Gluing polyhedra with entanglement in loop quantum gravity'',
+        Physical Review, {\bf D98}, 026001 (2018)
+        
+
+%%%% Examples of bibliography entries        
+%%%\bibitem{A variables}
+%%%  A. Ashtekar,
+%%%  ``New variables for classical and quantum Gravity",
+%%%  Phys. Rev. Lett. {\bf 57}, 2244-2247 (1986).
+%%%    
+%%%\bibitem{B variables}
+%%%  J. F. Barbero,
+%%%  ``Real Ashtekar variables for Lorentzian signature space times",
+%%%  Phys. Rev. {\bf D51}, 5507-5510 (1995),
+%%%  [arXiv:gr-qc/9410014].
+%%%
+%%%\bibitem{lqgcan1}
+%%%  A. Ashtekar, J. Lewandowski,
+%%%  ``Background independent quantum gravity: A status report'', 
+%%%  Class. Quant. Grav. {\bf 21}  R53 (2004),
+%%%  [arXiv:gr-qc/0404018].
+
+\end{thebibliography}  
+
+\end{document} 
