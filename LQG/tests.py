@@ -1,13 +1,25 @@
 #import LQG
-#import LQG.tetrahedra_num as tn
-#import LQG.tetrahedra_circuits as tc
-import tetrahedra_circuits as tc
-import tetrahedra_num as tn
+#import LQG.numerical as tn
+#import LQG.circuits as tc
+import circuits as tc
+import numerical as tn
+import postprocess as post
 import cirq
 import numpy as np
 
 digs = 5
 rnd = lambda x,y: round(x,ndigits=y)
+
+def test_mask():
+    s = post.Sample({0:1, 1:2, 15:3})
+    s.mask([0,3])
+    try:
+        assert({9:1, 10:2, 6:3})
+        print('passed!')
+    except:
+        print('failed! :(')
+
+
 
 def test_init_vec(theta,phi):
     Q = cirq.LineQubit.range(4)
@@ -60,6 +72,13 @@ def test_amplitude(circuit, expected, digs=12):
     return digs
 
 def main():
+    # processing testing
+    print('Testing mask')
+    test_mask()
+
+    print()
+
+    # Circuits testing (takes longer)
     qb = lambda x: cirq.LineQubit(x)
 
     # state preparation

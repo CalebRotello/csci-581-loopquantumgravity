@@ -1,9 +1,11 @@
-
+'''
+    Post process the histogram results 
+'''
 
 import numpy as np
 import fnmatch
-import tetrahedra_circuits as tc 
-import tetrahedra_num as tn
+import circuits as tc 
+import numerical as tn
 import json
 from matplotlib import pyplot
 
@@ -19,7 +21,14 @@ class Sample():
     def __init__(self,hist,nqubs=4,qubitmap=None):
         if qubitmap is not None:
             # qubits were swapped, so we must swap back
-            0
+            newhist = {}
+            for key,value in hist.items():
+                state = tc.binformat(nqubs).format(key)
+                newstate = list(state)
+                for start,end in qubitmap.items():
+                    newstate[end] = state[start]
+                newhist[int("".join(str(i) for i in newstate),2)] = value
+            hist = newhist
         self.hist = hist
         self.nqubs = nqubs
         self.samples = 0
@@ -30,26 +39,29 @@ class Sample():
         except:
             self.amplitude = 0
 
-    def state_subset(self,start,end,verbose=True):
-        states = {}
-        print('subsets of {} to {}'.format(start, end))
+    def split(self,n):
+        ''' split the samples into N seperate experiments '''
+        size_subsys = int(self.nqubs/n)
+        hists = [{} for _ in range(n)]
         for key,value in self.hist.items():
-            bstr = tc.binformat(self.nqubs).format(key)
-            s = []
-            for i,st in enumerate(start):
-                if i == None:
-                    s.append(bstr[st:])
-                else:
-                    s.append(bstr[st:end[i]])
-            try:
-                states[''.join(s)] += value
-            except:
-                states[''.join(s)] = value
-        if verbose:
-            for s,value in states.items():
-                print(s, value)
-            print()
-        return states
+            measure_state = tc.binformat(self.nqubs).format(key)
+            substates = [measure_state[size_subsys*i:size_subsys*i+size_subsys] for i in range(n)]
+            for i,state in enumerate(substates):
+                intstate = int(state,2)
+                if intstate not in hists[i].keys():
+                    hists[i][intstate] = 0
+                hists[i][intstate] += value
+        return [Sample(h,nqubs=size_subsys) for h in hists]
+
+    def mask(self,flips):
+        ''' take a list of qubits to flip '''
+        newhist = {}
+        for key,value in self.hist.items():
+            state = list(tc.binformat(self.nqubs).format(key))
+            for flip in flips:
+                state[flip] = str(int(not int(state[flip])))
+            newhist[int("".join(str(i) for i in state),2)] = value
+        self.hist = newhist
 
     def post_select(self,keepfn):
         ''' provide a function which returns true when a state can be kept 
@@ -67,67 +79,8 @@ class Sample():
             return 0
 
 
-
-
-class SampleWavefunction(Sample):
-    ''' A more specific type of sample, where the histogram is used to reconstruct 
-        the wavefunction
-    '''
-    def __init__(self,hist,nqubs):
-        super().__init__(hist,nqubs)        
-        self.wavefn = hist_to_wavefn(hist,nqubs)
-
-    def error(self,expected):
-        ''' overlap of abs value wavefn and abs value expected wavefn 
-        '''
-        self.sqoverlap = tn.overlap(self.wavefn,np.abs(expected))
-        return self.sqoverlap
-
-
-
-
-class Experiment():
-    ''' A collection of samples for one specific model
-    '''
-    def __init__(self,results,re,qnum,qubitmap=[]):
-        sample_names = fnmatch.filter(results.keys(),re)
-        self.sample_table = {s: Sample(results[s],qnum,qubitmap) for s in sample_names}
-        self.sample_count = len(sample_names)
-
-    def avg(self):
-        return np.sum([sample.amplitude for sample in self.sample_table.values()])/len(self.sample_count)
-
-    def post_select(self,keepfn):
-        ''' provide a function which returns true when a state can be kept 
-        '''
-        for name in self.sample_table.keys():
-            self.sample_table[name].post_select(keepfn)
-
-    def amplitude(self):
-        alist = [s.amplitude for s in self.sample_table.values()]
-        return alist, np.sum(alist)/len(alist)
-
-    def probability(self,i):
-        plist = []
-        for hist in self.sample_table.values():
-            plist.append(hist.probability(i))
-        return plist,np.sum(plist)/len(plist)
-
-def split_state(stateint,nqubs):
-    state = tc.binformat(nqubs).format(stateint)
-    substates = [state[i*4:i*4+4] for i in range(int(nqubs/4))]
-    return substates
-
-
-
-
 ''' Meta
 '''
-
-def glob_samples(results,re,qnum):
-    sample_names = fnmatch.filter(results.keys(),re)
-    return Sample(histogram_average([results[s] for s in sample_names]),qnum)
-
 def load(fname):
     ''' take a json filename, load it
         convert the keys to integers
@@ -144,68 +97,8 @@ def load(fname):
 
 
 
-
-''' Histogram manipulations
+''' Post Selection Strategies
 '''
-
-def histogram_average(histlist):
-    ''' take a list of histograms and return the histogram of their average
-    '''
-    avg_hist = {}
-    samples = 0
-    for hist in histlist:
-        for key,value in hist.items():
-            samples += value
-            try:
-                avg_hist[key] += value
-            except:
-                avg_hist[key] = value
-    return avg_hist
-
-def hist_to_wavefn(hist,N):
-    ''' given a histogram, get the absolute value of its wavefunction 
-    '''
-    wavefn = np.zeros(2**N)
-    runs = 0
-    for key,value in hist.items():
-        wavefn[key] = value
-        runs += value
-    return wavefn/np.linalg.norm(wavefn)
-
-def plot_wavefn(plt,wavefn,N,label):
-    strhist = {}
-    for i,val in enumerate(wavefn):
-        strhist[bin(i)] = val
-    plt.bar(*zip(*strhist.items()),label=label)
-    return plt
-
-def plot_hist(plt,hist,N,label):
-    strhist = {}
-    total = 0
-    for key,value in hist.items():
-        b = tc.binformat(N).format(key)
-        strhist[b] = value
-        total+= value
-    plt.bar(*zip(*strhist.items()),label=label)
-    return plt
-
-
-''' Post Selection
-'''
-
-def post_select_even(hist,N):
-    ''' post select data from a histogram knowing the states should have an even 
-        number of 1's 
-    '''
-    newhist = {}
-    newsamples = 0
-    for key,item in hist.items():
-        s = tc.binformat(N).format(key)
-        if s.count('1') % 2 == 0:
-            newhist[key] = item
-            newsamples += item
-    return newhist, newsamples
-
 def keepfn_L_zero(stateint,nqubs=4):
     ''' given a state in integer representation, check if it is valid 
     '''
@@ -224,3 +117,29 @@ def keepfn_paired(stateint,nqubs=4):
         if state[i] != state[i+1]:
             return False
     return True
+
+def keepfn_even_tets(stateint,nqubs=4):
+    state = tc.binformat(nqubs).format(stateint)
+    for i in range(int(nqubs/4)):
+        if not keepfn_even(int(state[i*4:i*4+4],2),nqubs=4):
+            return False
+    return True
+
+
+
+''' Runner '''
+def process_results(results,qubitmap,n_qubits,mask,n_split=1,keepfn=None):
+    ''' get the Sample of one type of experiment and return a amplitude '''
+    amps = []
+    for _,result in results.items():
+        sample = Sample(result,n_qubits*n_split,qubitmap)
+        sample.mask(mask)
+        samples = sample.split(n_split)
+        for _,s in enumerate(samples):
+            if keepfn is not None:
+                s.post_select(keepfn)
+            amps.append(s.amplitude)
+    return amps 
+
+
+
