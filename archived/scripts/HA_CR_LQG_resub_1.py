@@ -1,4 +1,5 @@
 ''' Spin-foam amplitudes of loop quantum gravity
+    submission 2
     project by Hakan Ayaz and Caleb Rotello
 '''
 import cirq
@@ -8,11 +9,11 @@ import pickle
 import os
 
 ''' change run-specific data here 
-    the simulating happens in run_circuit(), ll 369
+    the simulating happens in run_circuit(), ll 530
 '''
 processor = ''
 project_id = '' 
-sim_mode = ''
+sim_mode = ''#'engine'
 project_name = 'HA_CR_AMPLITUDE_LQG_sub2'
 
 
@@ -175,17 +176,14 @@ def entangle_tets(pairs, gateset=True):
     ''' given a list of pairs (source->sink) 
     '''
     paired = set() # make sure we don't double-pair
-    #cnot = cirq.CNotPowGate(exponent=exp)
     circuit = cirq.Circuit()
     for p in pairs:
         for itm in p:
             assert(itm not in paired)
             paired.add(itm)
         circuit.append([
-            #cnot.on(p[0],p[1]),
             cirq.CNOT(p[0],p[1]),
             cirq.H(p[0]),
-            #cirq.X.on_each(p[0],p[1]),
             cirq.X(p[1])
         ])
     if gateset:

@@ -3,7 +3,7 @@
 '''
 import cirq
 import numpy as np
-import tetrahedra_num as tn
+import numerical as tn
 
 project_name ='HA_CR_AMPLITUDE_LQG'
 
