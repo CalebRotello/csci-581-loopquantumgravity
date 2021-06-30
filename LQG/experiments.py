@@ -44,24 +44,29 @@ class Experiment:
         entagling_pairs = np.array(entagling_pairs)
         assert(len(entagling_pairs) * 2 == len(qubits))
 
-        # create the circuit
+        # inversion mask
         if invert_mask is None:
             invert_mask = [False]*len(qubits)
         self.invert_mask = invert_mask
 
+        # create the circuit
         states = [intertwiner_states[i](qubits[i*4:i*4+4]) for i in range(num_states)]
         self.circuit = cirq.Circuit(states, 
                                     inverse_circuit(entagling_pairs, qubits, invert_mask),
                                     )
         self.circuit = utils.parallelize(self.circuit)
 
+        # remap the inversion mask on hardware
         mapped_invert_mask = self.invert_mask
+
+        # make hardware specific changes
         if on_hardware:
             self.circuit = utils.to_iswap(self.circuit)
             self.circuit = cirq.Circuit(self.circuit, device=SYCAMORE)
             self.qubit_map = utils.remap_qubits(qubits)
             mapped_invert_mask = [self.invert_mask[item] for _,item in self.qubit_map.items()]
 
+        # measure
         self.circuit.append(cirq.measure(*qubits,invert_mask=mapped_invert_mask,key='z'))
 
         self.on_hardware = on_hardware
@@ -70,11 +75,17 @@ class Experiment:
 
 
     def svg(self):
+        ''' Show circuit as SVG object '''
         return SVGCircuit(self.circuit)
 
     def sim(self, target_engine, experiments=10, samples=1024):
-        ''' run experiment '''
+        ''' Run experiment on targeted engine
+            :param engine target_engine: Specify when the Sycamore device is the target, or when None is
+            :param int experiments: How many experiments to run
+            :param int samples: How many runs per experiment
+        '''
         print('Simulating {} experiments with {} samples each'.format(experiments, samples))
+        # engine specific changes
         if target_engine == SYCAMORE:
             if not self.on_hardware:
                 print("WARNING circuit submitted to Sycamore hardware was not compiled for the gateset")
@@ -82,6 +93,7 @@ class Experiment:
                 utils.to_iswap(self.circuit)
             engine = cirq.google.Engine(project_id=PROJECT_ID) 
         self.experiment_results = []
+        # run everything
         for experiment in range(experiments):
             if target_engine == SYCAMORE:
                 print('Running experiment {} of {} on QPU...'.format(experiment,experiments),end='')
@@ -99,7 +111,10 @@ class Experiment:
         print("Finished.")
 
     def save(self, name, description=None):
-        ''' save the experiment to a file, named after the (hopefully unique) name of the experiment '''
+        ''' Save the experiment to a file, named after the (hopefully unique) name of the experiment 
+            :param str name: Name of the experiment. Experiment is saved at DATA_DIR/name.json
+            :param str description: It can be useful to store a description of the expeirment
+        '''
         root_dir = os.getcwd()
         top_dir = DATA_DIR
         dir_path = os.path.join(root_dir,top_dir) 
@@ -120,8 +135,11 @@ class Experiment:
             
 
 class Result:
-    ''' store the data from the experiment plus circuit information useful for calculations '''
+    ''' Restor the data from the experiment plus circuit information useful for calculations '''
     def __init__(self, experiment_name):
+        ''' Ctor.
+            :param str experiment_name: The name of the experiment, will recover it from DATA_DIR/experiment_name.json
+        '''
         with open(DATA_DIR+'/'+experiment_name+'.json', 'r') as f:
             results_json = json.load(f)
         self.experiment_name = experiment_name
@@ -137,6 +155,7 @@ class Result:
             self.histograms = [{int(key):value for key,value in hist.items()} for hist in self.histograms]
 
     def info(self):
+        ''' Print the design information of the experiment '''
         print(self.experiment_name)
         print(self.description)
         print('qubits: ',self.qubits)
@@ -145,6 +164,10 @@ class Result:
 
 
     def filter(self,filter_fn):
+        ''' Postselect our data with a given funciton 
+            :param funciton filter_fn: A function applied to each measurement, with parameters state_int,qubit_count. 
+                Returns True if the measurement is kept
+        '''
         histograms = []
         removed = []
         for hist in self.histograms:
@@ -161,6 +184,10 @@ class Result:
         
 
     def report(self,state=0,expected=None):
+        ''' Print a report of the experiment 
+            :param int state: A state_int of the final state whose amplitude we are curious about (default |0>)
+            :param int expected: When not None, it is the expected amplitude of the requested state.
+        '''
         self._avg_()
         print('---------------------------------------')
         print('REPORT {}:'.format(self.experiment_name))
@@ -173,10 +200,15 @@ class Result:
         print('---------------------------------------')
 
     def _amplitude_(self,state_int,hist):
+        ''' Get the amplitude, sample_size 
+            :param int state_int: State_int of the amplitdue we want
+            :param dict(int,int): The histogram
+        '''
         total_runs = sum([value for _,value in hist.items()])
         return hist[state_int]/total_runs, total_runs
 
     def _avg_(self):
+        ''' Average all of the results and store in a meta-histogram of all experiments '''
         self.avg_histogram = {}
         for hist in self.histograms:
             for key,value in hist.items():
@@ -190,7 +222,11 @@ class Result:
 ''' algorithm circuit generating functions '''
 
 def inverse_circuit(pairs,qubits,invert_mask):
-    ''' create an inverse(ish) circuit given a list of pairs (source->sink) and list of states to flip '''
+    ''' Create an inverse(ish) circuit given a list of pairs (source->sink) and list of states to flip 
+        :param list(int,int) pairs: A list of pairs of states to entangle, source->sink, given by qubit index
+        :param list(Qubit) qubits: Get the qubit by index given in pairs from this list
+        :param list(bool) invert_mask: A list of qubit indicies, True when the final X is not applied and the bit is manually flipped
+    '''
     paired = set() # make sure we dont double pair
     circuit = cirq.Circuit()
     for p in pairs:
@@ -200,7 +236,9 @@ def inverse_circuit(pairs,qubits,invert_mask):
         circuit.append(
             cirq.CNOT(qubits[p[0]],qubits[p[1]])
         )
+    # Haddamard all source bits
     circuit.append(cirq.H.on_each([qubits[p[0]] for p in pairs]))
+    # X or flip
     for i,bit in enumerate(invert_mask):
         if not bit:
             circuit.append(cirq.X(qubits[i]))
@@ -208,6 +246,7 @@ def inverse_circuit(pairs,qubits,invert_mask):
 
 
 def zero(qubits):
+    ''' Create the Zero Intertwiner state with 4 qubits '''
     assert(len(qubits) == 4)
     return cirq.Circuit(
         cirq.X.on_each(qubits),
@@ -217,6 +256,7 @@ def zero(qubits):
     )
 
 def one(qubits):
+    ''' Create the One Intertwiner state with 4 qubits '''
     assert(len(qubits) == 4)
     return cirq.Circuit(
         cirq.H(qubits[0]),
@@ -239,6 +279,7 @@ c_three = lambda theta,phi: np.sqrt(1/2)*(-np.cos(theta/2) - np.sqrt(1/3)*np.exp
 distance = lambda a,b: np.sqrt(np.abs(a)**2 + np.abs(b)**2)
 
 def U(theta,phi):
+    ''' Unitary for the UGate '''
     c1 = c_one(theta,phi)
     c2 = c_two(theta,phi)
     c3 = c_three(theta,phi)
@@ -246,6 +287,7 @@ def U(theta,phi):
             [-1*distance(c2,c3), np.conj(c1)]]
 
 def V(theta,phi):
+    ''' Unitary applied on the CVGate '''
     c1 = c_one(theta,phi)
     c2 = c_two(theta,phi)
     c3 = c_three(theta,phi)
